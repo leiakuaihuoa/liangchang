@@ -1,0 +1,107 @@
+function intensity_I2_orientation
+rho_eve=load('rho_eve_max.dat');%指定时刻的rho分布
+% rho_eve=ones(size(rho_eve));%将分布都抹平了，即取向平均了
+
+figure
+mesh(rho_eve);
+% rho_eve(:,1)=0;
+
+filename='I_500ev_new.txt';
+%filename='O_150ev.txt';
+
+c=load(filename);
+f_theta=c(:,1);
+f_real=c(:,3)/5.2917721092e-9;
+f_imag=c(:,4)/5.2917721092e-9;
+
+
+
+
+
+
+delta_angle=0.003*pi;
+Theta=0:delta_angle:pi;
+Phi=0:2*delta_angle:2*pi;
+[theta_p,phi_p]=meshgrid(Theta,Phi);
+[theta,phi]=meshgrid(Theta,Phi);
+a=2.666e-10/5.2917721092e-11;
+%本来为2.666
+rho_eve=rho_eve.*cos(theta).^50;
+figure
+mesh(rho_eve);
+rho_eve=rho_eve/(sum(sum(rho_eve.*sin(theta_p)))*delta_angle^2*2);
+
+cos_2=sum(sum(rho_eve.*sin(theta_p).*cos(theta_p).^2))*delta_angle^2*2;
+
+figure
+mesh(rho_eve);
+
+k=sqrt(2*500/27.211385);
+
+f=(interp1(f_theta,f_real,theta_p/pi*180,'spline')+...
+    1i*interp1(f_theta,f_imag,theta_p/pi*180,'spline'));%散射振幅
+% figure
+% mesh(abs(f));
+% 
+% 
+ I_single=abs(cos(theta_p)+exp(1i*k*a)/a*f.*exp(-1i*k*a*cos(theta_p))).^2;
+% 
+ figure
+ mesh(theta_p,phi_p,I_single+fliplr(I_single));%绘制单分子的衍射图
+% 
+ I_total2=zeros(size(I_single));
+I_total3=zeros(size(I_single));
+for ii=1:max(size(Theta))
+for jj=1:max(size(Theta))
+   
+   cos_theta=sin(theta).*cos(phi)*sin(theta_p(ii,jj))*cos(phi_p(ii,jj))+sin(theta).*sin(phi)*sin(theta_p(ii,jj))*sin(phi_p(ii,jj))+cos(theta)*cos(theta_p(ii,jj));
+   scatter_theta=real(acos(cos_theta))/pi*180;%这里对一个矩阵做运算不知道行不行啊,行的啊
+   
+   f_angle=(interp1(f_theta,f_real,scatter_theta,'spline')+...
+    1i*interp1(f_theta,f_imag,scatter_theta,'spline'));%散射振幅
+
+
+   
+   I_total2(ii,jj)=sum(sum(sin(theta).*cos(theta).^2.*abs(f_angle).^2/a^2.*rho_eve))*delta_angle^2*2;
+   I_total3(ii,jj)=exp(1i*k*a)/a*cos(theta_p(ii,jj))*sum(sum(sin(theta).*cos(theta).*f_angle.*exp(-1i*k*a*cos_theta).*rho_eve))*delta_angle^2*2;
+end
+end
+
+I=2*real(I_total3)+I_total2+cos(theta_p).^2;
+I_2=I-cos(theta_p).^2;
+% 
+% I_2=I_total2;
+ I_3=2*real(I_total3);
+% 
+figure
+plot(theta_p(1,:),I(1,:));
+
+figure
+plot(theta_p(1,:),I_total2(1,:));
+% 
+% 
+
+
+figure
+plot(theta_p(1,:),I_3(1,:));
+ 
+
+
+% figure
+% plot(Theta,I_total2(1,:));
+% 
+% figure
+% plot(Theta,2*real(I_total3(1,:)));
+% 
+%  figure
+%  plot(Theta,2*real(I_total3(1,:))+I_total2(1,:)+cos(real(Theta)).^2);
+%  
+ 
+%I_total3_f=1i*imag(I_total3);
+save I_max_2666.txt I -ascii
+save I2_max_2666.txt I_2 -ascii
+save I3_max_2666.txt I_3 -ascii
+% save I_con_2666.txt I -ascii
+% save I_total3_con_2666.txt I_3 -ascii
+% save I2_f_con_2666.txt I2 -ascii
+end
